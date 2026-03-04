@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F1 Fantasy HQ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-f1">F1</span>
+    <span class="logo-rest">FANTASY HQ</span>
+  </div>
+  <nav>
+    <button class="active" onclick="showPage('team', this)">My Teams</button>
+    <button onclick="showPage('results', this)">Results</button>
+    <button onclick="showPage('standings', this)">Standings</button>
+    <button onclick="showPage('strategy', this)">Strategy</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ===== TEAMS PAGE ===== -->
+  <div class="page active" id="page-team">
+    <div class="team-tabs-row">
+      <div class="team-tabs" id="team-tabs"></div>
+      <button class="btn btn-ghost btn-sm" onclick="createTeam()">+ New Team</button>
+    </div>
+
+    <div class="budget-display">
+      <div>
+        <div class="budget-label">Budget Used</div>
+        <div class="budget-value ok" id="budget-used">$0.0M</div>
+      </div>
+      <div class="budget-bar-wrap">
+        <div class="budget-bar">
+          <div class="budget-bar-fill" id="budget-fill" style="width:0%;background:var(--green)"></div>
+        </div>
+        <div class="budget-meta" id="budget-meta">$100.0M remaining</div>
+      </div>
+      <div>
+        <div class="budget-label">Total Budget</div>
+        <div class="budget-value">$100.0M</div>
+      </div>
+    </div>
+
+    <div class="chip-row" id="chip-row">
+      <div class="tag" style="line-height:28px;margin-right:4px">Chips:</div>
+      <div class="chip available" onclick="toggleChip(this,'Wildcard')"    title="Unlimited free transfers for 1 GW">Wildcard</div>
+      <div class="chip available" onclick="toggleChip(this,'No Negative')" title="Your score floors at 0 this GW">No Negative</div>
+      <div class="chip available" onclick="toggleChip(this,'x3 Boost')"    title="Triple your top scorer's points">x3 Boost</div>
+      <div class="chip available" onclick="toggleChip(this,'Autopilot')"   title="Auto-select best available team">Autopilot</div>
+      <div class="chip available" onclick="toggleChip(this,'Limitless')"   title="No budget limit for 1 GW">Limitless</div>
+      <div class="chip available" onclick="toggleChip(this,'Final Fix')"   title="Last chance free transfer before deadline">Final Fix</div>
+    </div>
+
+    <div class="tag mb-1">Drivers <span style="color:var(--text-dim)">(5)</span></div>
+    <div class="team-grid driver-grid" id="driver-slots"></div>
+
+    <div class="tag mb-1 mt-2">Constructors <span style="color:var(--text-dim)">(2)</span></div>
+    <div class="team-grid constructor-grid" id="constructor-slots"></div>
+
+    <!-- Transfer Planner per race -->
+    <div class="transfer-planner-wrap mt-3">
+      <div class="transfer-planner-header">
+        <span class="tag" style="font-size:0.8rem">Transfer Planner</span>
+        <span class="tag" id="transfer-summary-label" style="color:var(--text-dim)"></span>
+      </div>
+      <div class="transfer-race-list" id="transfer-race-list"></div>
+    </div>
+
+    <div class="flex-between mt-2">
+      <div></div>
+      <div class="flex gap-1">
+        <button class="btn btn-ghost" onclick="clearTeam()">Clear</button>
+        <button class="btn btn-ghost btn-danger" onclick="deleteCurrentTeam()">Delete Team</button>
+        <button class="btn" onclick="saveTeam()">Save Team</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== RESULTS PAGE ===== -->
+  <div class="page" id="page-results">
+    <div class="section-title" style="margin-bottom:1rem">Race Results</div>
+    <div class="team-select-row" id="results-team-select"></div>
+    <div class="results-layout">
+      <!-- LEFT: Calendar list -->
+      <div class="results-calendar">
+        <div class="results-cal-header">2025 Calendar</div>
+        <div id="race-calendar-list"></div>
+      </div>
+      <!-- RIGHT: Detail panel -->
+      <div class="results-panel" id="race-detail-panel">
+        <div class="empty-state" style="padding:4rem 1rem">Select a race from the calendar.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STANDINGS PAGE ===== -->
+  <div class="page" id="page-standings">
+    <div class="section-title">Season Standings</div>
+    <div class="team-select-row" id="standings-team-select"></div>
+
+    <div class="grid-4 mb-2">
+      <div class="card stat-block"><div class="stat-value" id="stat-total-pts">0</div><div class="stat-label">Total Points</div></div>
+      <div class="card stat-block"><div class="stat-value" id="stat-races">0</div><div class="stat-label">Races</div></div>
+      <div class="card stat-block"><div class="stat-value" id="stat-avg">0</div><div class="stat-label">Avg / Race</div></div>
+      <div class="card stat-block"><div class="stat-value" id="stat-best">0</div><div class="stat-label">Best Race</div></div>
+    </div>
+
+    <div class="card mt-2">
+      <div class="tag mb-1">Points History</div>
+      <div class="mini-chart" id="pts-chart"></div>
+      <div style="margin-top:22px"></div>
+    </div>
+
+    <div class="card mt-2">
+      <div class="tag" style="margin-bottom:1rem">Ranking History — Race by Race</div>
+      <table class="standings-table" id="rankings-table">
+        <thead>
+          <tr>
+            <th>Round</th>
+            <th>Race</th>
+            <th>Points</th>
+            <th>🌍 Global Rank</th>
+            <th>🇲🇰 MKD Rank</th>
+            <th>Budget Gain</th>
+            <th>Chip</th>
+          </tr>
+        </thead>
+        <tbody id="rankings-body">
+          <tr><td colspan="7" class="empty-state">No race data yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== STRATEGY PAGE ===== -->
+  <div class="page" id="page-strategy">
+    <div class="section-title">Strategy Hub</div>
+
+    <!-- Team selector -->
+    <div class="team-select-row" id="strategy-team-select"></div>
+
+    <!-- GP Selector + Race Planning fields -->
+    <div class="card mb-2">
+      <div class="flex-between mb-2">
+        <div class="tag" style="font-size:0.8rem">Race Plan</div>
+        <select id="strategy-gp-select" class="strategy-gp-dropdown" onchange="renderStrategyRacePlan()">
+          <option value="">— Select Grand Prix —</option>
+        </select>
+      </div>
+      <div id="strategy-race-plan">
+        <div class="empty-state" style="padding:2rem">Select a Grand Prix above to plan your strategy.</div>
+      </div>
+    </div>
+
+    <!-- Chip Tracker + Transfer Log side by side -->
+    <div class="grid-2 mb-2">
+      <div class="card">
+        <div class="tag" style="margin-bottom:1rem">Chip Tracker</div>
+        <div id="chip-tracker"></div>
+      </div>
+      <div class="card">
+        <div class="flex-between mb-1">
+          <div class="tag" style="font-size:0.8rem">Transfer Log</div>
+        </div>
+        <div id="transfer-list"><div class="empty-state" style="padding:1rem 0">No transfers logged.</div></div>
+        <div class="flex-between mt-2">
+          <button class="btn btn-ghost btn-sm" onclick="openTransferModal()">+ Log Transfer</button>
+          <span class="tag" id="transfer-count">0 transfers</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strategy Notes -->
+    <div class="card mb-2">
+      <div class="tag mb-1">Strategy Notes</div>
+      <textarea class="notes-area" id="strategy-notes" placeholder="Write your strategy notes, chip plans, upcoming race thoughts..."></textarea>
+    </div>
+
+    <!-- Single Save button -->
+    <div class="flex-between">
+      <div></div>
+      <button class="btn" id="strategy-save-btn" onclick="saveStrategy()">Save</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- PICKER OVERLAY -->
+<div class="picker-overlay" id="picker-overlay">
+  <div class="picker-box">
+    <div class="picker-header">
+      <h3 id="picker-title">Select Driver</h3>
+      <button class="close-btn" onclick="closePicker()">✕</button>
+    </div>
+    <div class="picker-tabs" id="picker-tabs"></div>
+    <div class="picker-list" id="picker-list"></div>
+  </div>
+</div>
+
+<!-- NEW TEAM MODAL -->
+<div class="picker-overlay" id="new-team-modal">
+  <div class="picker-box" style="width:380px">
+    <div class="picker-header">
+      <h3>Create New Team</h3>
+      <button class="close-btn" onclick="closeNewTeamModal()">✕</button>
+    </div>
+    <div style="padding:1.25rem;display:flex;flex-direction:column;gap:1rem">
+      <div>
+        <label class="tag" style="display:block;margin-bottom:0.4rem">Team Name</label>
+        <input type="text" id="new-team-name" placeholder="e.g. My Main Team" class="modal-input">
+      </div>
+      <button class="btn" onclick="confirmCreateTeam()">Create Team</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRANSFER MODAL -->
+<div class="picker-overlay" id="transfer-modal">
+  <div class="picker-box" style="width:420px">
+    <div class="picker-header">
+      <h3>Log Transfer</h3>
+      <button class="close-btn" onclick="closeTransferModal()">✕</button>
+    </div>
+    <div style="padding:1.25rem;display:flex;flex-direction:column;gap:1rem">
+      <div>
+        <label class="tag" style="display:block;margin-bottom:0.4rem">Round / Race</label>
+        <select id="t-round" class="modal-input">
+          <option value="">— Select Race —</option>
+        </select>
+      </div>
+      <div>
+        <label class="tag" style="display:block;margin-bottom:0.4rem">Out (who left)</label>
+        <select id="t-out" class="modal-input">
+          <option value="">— Select Player Out —</option>
+        </select>
+      </div>
+      <div>
+        <label class="tag" style="display:block;margin-bottom:0.4rem">In (who came in)</label>
+        <select id="t-in" class="modal-input">
+          <option value="">— Select Player In —</option>
+        </select>
+      </div>
+      <button class="btn" onclick="saveTransfer()">Log Transfer</button>
+    </div>
+  </div>
+</div>
+
+<!-- WATCHLIST MODAL -->
+<div class="picker-overlay" id="watchlist-modal">
+  <div class="picker-box" style="width:400px">
+    <div class="picker-header">
+      <h3>Add to Watch List</h3>
+      <button class="close-btn" onclick="closeWatchlistModal()">✕</button>
+    </div>
+    <div style="padding:1.25rem;display:flex;flex-direction:column;gap:1rem">
+      <div><label class="tag" style="display:block;margin-bottom:0.4rem">Driver Name</label><input type="text" id="w-name" placeholder="e.g. Verstappen" class="modal-input"></div>
+      <div><label class="tag" style="display:block;margin-bottom:0.4rem">Reason / Notes</label><input type="text" id="w-reason" placeholder="e.g. Good value for street circuits" class="modal-input"></div>
+      <button class="btn" onclick="saveWatchlist()">Add to Watch List</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
