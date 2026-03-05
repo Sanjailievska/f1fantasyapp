@@ -188,18 +188,16 @@ function renderDriverSlots() {
     const slot = document.createElement('div');
     slot.className = 'team-slot' + (d ? ' filled' : '');
     if (d) {
-      const isCap = i === t.captain, isDRS = i === t.drs;
+      const isCap = i === t.captain;
       slot.innerHTML = `
-        ${isCap ? '<div class="slot-captain-badge">★ Cap</div>' : ''}
-        ${isDRS && !isCap ? '<div class="slot-drs-badge">DRS</div>' : ''}
+        ${isCap ? '<div class="slot-captain-badge">✕2</div>' : ''}
         <button class="slot-remove" onclick="removeDriver(${i})">✕</button>
         <div class="slot-team-color" style="background:${d.color}"></div>
         <div class="slot-role">Driver ${i+1}</div>
         <div class="slot-name">${d.name}</div>
         <div class="slot-price">$${d.price}M</div>
         <div class="flex gap-1 mt-1">
-          <button onclick="setCaptain(${i})" style="background:${isCap?'var(--gold)':'none'};border:1px solid var(--gold);color:${isCap?'#000':'var(--gold)'};font-size:0.58rem;padding:2px 5px;border-radius:3px;cursor:pointer;font-family:'Barlow Condensed',sans-serif">Cap</button>
-          <button onclick="setDRS(${i})"     style="background:${isDRS?'var(--green)':'none'};border:1px solid var(--green);color:${isDRS?'#000':'var(--green)'};font-size:0.58rem;padding:2px 5px;border-radius:3px;cursor:pointer;font-family:'Barlow Condensed',sans-serif">DRS</button>
+          <button onclick="setCaptain(${i})" style="background:${isCap?'var(--gold)':'none'};border:1px solid var(--gold);color:${isCap?'#000':'var(--gold)'};font-size:0.58rem;padding:2px 5px;border-radius:3px;cursor:pointer;font-family:'Barlow Condensed',sans-serif">x2 Boost</button>
         </div>`;
     } else {
       slot.innerHTML = `<div class="slot-role">Driver ${i+1}</div><div style="font-size:1.5rem;color:var(--border)">+</div>`;
@@ -348,12 +346,10 @@ function removeDriver(i) {
   const t = activeTeam();
   t.drivers[i] = null;
   if (t.captain === i) t.captain = 0;
-  if (t.drs === i)     t.drs = -1;
   renderDriverSlots(); updateBudget(); saveState();
 }
 function removeConstructor(i) { activeTeam().constructors[i]=null; renderConstructorSlots(); updateBudget(); saveState(); }
-function setCaptain(i) { activeTeam().captain=i; if(activeTeam().drs===i) activeTeam().drs=-1; renderDriverSlots(); saveState(); }
-function setDRS(i)     { activeTeam().drs=(activeTeam().drs===i)?-1:i; renderDriverSlots(); saveState(); }
+function setCaptain(i) { activeTeam().captain = i; renderDriverSlots(); saveState(); }
 function clearTeam()   {
   if(!confirm('Clear all picks?')) return;
   const t=activeTeam(); t.drivers=[null,null,null,null,null]; t.constructors=[null,null]; t.captain=0; t.drs=-1;
@@ -493,7 +489,7 @@ function renderRaceDetail(round) {
           <div class="result-field-label">Points</div>
           <div class="result-field-sub">Your total fantasy points this race</div>
         </div>
-        <input class="result-field-input" type="number" id="rf-pts"
+        <input class="result-field-input" type="text" inputmode="numeric" id="rf-pts"
           placeholder="e.g. 87" value="${saved.totalPts != null ? saved.totalPts : ''}">
       </div>
 
@@ -505,7 +501,7 @@ function renderRaceDetail(round) {
         </div>
         <div class="result-field-prefix-wrap">
           <span class="result-field-prefix-sym">$</span>
-          <input class="result-field-input prefix-input" type="number" step="0.1" id="rf-bgain"
+          <input class="result-field-input prefix-input" type="text" inputmode="decimal" id="rf-bgain"
             placeholder="e.g. 2.5" value="${saved.budgetGain != null ? saved.budgetGain : ''}">
           <span class="result-field-prefix-sym">M</span>
         </div>
@@ -519,7 +515,7 @@ function renderRaceDetail(round) {
         </div>
         <div class="result-field-prefix-wrap">
           <span class="result-field-prefix-sym">#</span>
-          <input class="result-field-input prefix-input" type="number" id="rf-global"
+          <input class="result-field-input prefix-input" type="text" inputmode="numeric" id="rf-global"
             placeholder="e.g. 142500" value="${saved.globalRank != null ? saved.globalRank : ''}">
         </div>
       </div>
@@ -532,7 +528,7 @@ function renderRaceDetail(round) {
         </div>
         <div class="result-field-prefix-wrap">
           <span class="result-field-prefix-sym">#</span>
-          <input class="result-field-input prefix-input" type="number" id="rf-mkd"
+          <input class="result-field-input prefix-input" type="text" inputmode="numeric" id="rf-mkd"
             placeholder="e.g. 12" value="${saved.mkdRank != null ? saved.mkdRank : ''}">
         </div>
       </div>
@@ -543,10 +539,10 @@ function renderRaceDetail(round) {
           <div class="result-field-label">Chip Used</div>
           <div class="result-field-sub">Did you play a chip this race?</div>
         </div>
-        <div class="chip-select-row">
-          <div class="chip-option ${chipUsed===''?'chip-opt-active':''}" onclick="selectChipOpt(this,'')">None</div>
-          ${chips.map(c=>`<div class="chip-option ${chipUsed===c?'chip-opt-active':''}" onclick="selectChipOpt(this,'${c}')">${c}</div>`).join('')}
-        </div>
+        <select class="result-field-select" id="rf-chip">
+          <option value="">None</option>
+          ${chips.map(c=>`<option value="${c}" ${chipUsed===c?'selected':''}>${c}</option>`).join('')}
+        </select>
       </div>
 
     </div>
@@ -559,20 +555,13 @@ function renderRaceDetail(round) {
     </div>`;
 }
 
-let _pendingChip = null;
-function selectChipOpt(el, val) {
-  el.closest('.chip-select-row').querySelectorAll('.chip-option').forEach(o => o.classList.remove('chip-opt-active'));
-  el.classList.add('chip-opt-active');
-  _pendingChip = val;
-}
-
 function saveRaceResult(round) {
   const t          = state.teams[resultsTeamIdx];
   const totalPts   = parseFloat(document.getElementById('rf-pts')?.value);
   const budgetGain = parseFloat(document.getElementById('rf-bgain')?.value);
   const globalRank = parseInt(document.getElementById('rf-global')?.value);
   const mkdRank    = parseInt(document.getElementById('rf-mkd')?.value);
-  const chipUsed   = _pendingChip !== null ? _pendingChip : (t.races[round]?.chipUsed || '');
+  const chipUsed   = document.getElementById('rf-chip')?.value || '';
 
   t.races[round] = {
     totalPts:    isNaN(totalPts)   ? null : totalPts,
