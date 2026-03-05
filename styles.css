@@ -720,6 +720,7 @@ main {
   gap: 1rem;
   padding: 1rem 0;
   border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
 }
 .result-field-row:last-child { border-bottom: none; }
 .result-field-icon {
@@ -765,7 +766,7 @@ main {
 }
 .result-field-prefix-wrap:focus-within { border-color: var(--red); }
 .result-field-prefix-sym { font-family: 'Barlow Condensed', sans-serif; font-size: 0.85rem; color: var(--text-dim); flex-shrink: 0; }
-.chip-select-row  { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; max-width: 320px; }
+.chip-select-row  { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; max-width: 340px; }
 .chip-option {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -1004,12 +1005,24 @@ main {
   /* Result field rows: icon hidden on tiny screens, full-width input */
   .result-field-icon  { display: none; }
   .result-field-sub   { display: none; }
-  .result-field-row   { padding: 0.7rem 0; gap: 0.5rem; }
+  .result-field-row   { padding: 0.7rem 0; gap: 0.5rem; flex-wrap: wrap; }
   .result-field-label { font-size: 0.82rem; }
+
+  /* Budget gain, ranks — input fills the row */
   .result-field-input,
-  .result-field-prefix-wrap { width: 120px; }
-  .chip-select-row    { max-width: 100%; justify-content: flex-start; gap: 0.3rem; }
-  .chip-option        { font-size: 0.65rem; padding: 0.22rem 0.5rem; }
+  .result-field-prefix-wrap { width: 100%; flex-shrink: 1; }
+  .result-field-input.prefix-input { width: 100%; }
+
+  /* Chip used — label on its own line, chips wrap below */
+  .result-field-row:has(.chip-select-row) { flex-direction: column; align-items: flex-start; }
+  .chip-select-row {
+    max-width: 100%;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+  .chip-option { font-size: 0.65rem; padding: 0.22rem 0.5rem; }
 
   /* ── Standings ── */
   .grid-4 { grid-template-columns: 1fr 1fr; }
